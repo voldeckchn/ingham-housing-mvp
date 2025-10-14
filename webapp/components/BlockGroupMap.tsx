@@ -4,16 +4,19 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { BlockGroupData } from '@/lib/types'
 import BlockGroupPanel from './BlockGroupPanel'
+import ScoreLegend from './ScoreLegend'
 
 interface BlockGroupMapProps {
   predictions: BlockGroupData[]
   highlightedAreas?: string[]
+  spilloverAreas?: string[]
   focusArea?: string | null
 }
 
 export default function BlockGroupMap({
   predictions,
   highlightedAreas = [],
+  spilloverAreas = [],
   focusArea = null
 }: BlockGroupMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -59,16 +62,18 @@ export default function BlockGroupMap({
         paint: {
           'fill-color': [
             'case',
-            ['==', ['get', 'GEOID'], ''],
-            '#cccccc',
+            ['has', ['get', 'GEOID'], ['literal', scoresMap]],
             [
               'interpolate',
               ['linear'],
-              ['to-number', ['get', 'GEOID', ['literal', scoresMap]], 50],
+              ['get', ['get', 'GEOID'], ['literal', scoresMap]],
               0, '#d73027',
+              30, '#fc8d59',
               50, '#fee08b',
+              70, '#91cf60',
               100, '#1a9850'
-            ]
+            ],
+            '#cccccc'  // Gray for missing data
           ],
           'fill-opacity': 0.7
         }
@@ -112,13 +117,12 @@ export default function BlockGroupMap({
     }
   }, [predictions])
 
-  // Handle highlighted areas
+  // Handle highlighted areas (primary selection - red)
   useEffect(() => {
-    if (!mapRef.current || !highlightedAreas.length) return
+    if (!mapRef.current) return
 
     const map = mapRef.current
 
-    // Add highlight layer if it doesn't exist
     if (!map.getLayer('bg-highlights')) {
       map.addLayer({
         id: 'bg-highlights',
@@ -135,9 +139,50 @@ export default function BlockGroupMap({
     }
   }, [highlightedAreas])
 
+  // Handle spillover areas (secondary effect - orange dashed)
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    const map = mapRef.current
+
+    if (!map.getLayer('bg-spillover')) {
+      map.addLayer({
+        id: 'bg-spillover',
+        type: 'line',
+        source: 'block-groups',
+        paint: {
+          'line-color': '#fb923c',
+          'line-width': 2,
+          'line-dasharray': [2, 2]
+        },
+        filter: ['in', 'GEOID', ...spilloverAreas]
+      })
+
+      // Add subtle fill for spillover areas
+      map.addLayer({
+        id: 'bg-spillover-fill',
+        type: 'fill',
+        source: 'block-groups',
+        paint: {
+          'fill-color': '#fb923c',
+          'fill-opacity': 0.15
+        },
+        filter: ['in', 'GEOID', ...spilloverAreas]
+      }, 'bg-fill') // Insert below the main fill layer
+    } else {
+      map.setFilter('bg-spillover', ['in', 'GEOID', ...spilloverAreas])
+      map.setFilter('bg-spillover-fill', ['in', 'GEOID', ...spilloverAreas])
+    }
+  }, [spilloverAreas])
+
   return (
     <div className="relative w-full h-screen">
       <div ref={mapContainer} className="w-full h-full" />
+
+      {/* Legend */}
+      <ScoreLegend position="bottom-right" />
+
+      {/* Selected Block Group Panel */}
       {selectedBG && (
         <BlockGroupPanel
           bg={selectedBG}

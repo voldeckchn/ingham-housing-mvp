@@ -10,6 +10,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [highlightedAreas, setHighlightedAreas] = useState<string[]>([])
+  const [spilloverAreas, setSpilloverAreas] = useState<string[]>([])
   const [focusArea, setFocusArea] = useState<string | null>(null)
 
   useEffect(() => {
@@ -53,6 +54,11 @@ export default function Home() {
     )
   }
 
+  const handleExportCSV = () => {
+    const { exportBlockGroupsCSV } = require('@/lib/csv-export')
+    exportBlockGroupsCSV(predictions)
+  }
+
   return (
     <main className="relative w-full h-screen">
       {/* Title Card */}
@@ -82,18 +88,31 @@ export default function Home() {
             <span>Low Equity</span>
           </div>
         </div>
+
+        {/* Export Button */}
+        <button
+          onClick={handleExportCSV}
+          className="mt-3 w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors flex items-center justify-center"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export All Data (CSV)
+        </button>
       </div>
 
       {/* Map */}
       <BlockGroupMap
         predictions={predictions}
         highlightedAreas={highlightedAreas}
+        spilloverAreas={spilloverAreas}
         focusArea={focusArea}
       />
 
       {/* AI Assistant */}
       <AIAssistant
         onHighlightAreas={setHighlightedAreas}
+        onSpilloverAreas={setSpilloverAreas}
         onFocusArea={setFocusArea}
       />
     </main>

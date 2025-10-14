@@ -2,20 +2,30 @@
 
 import { useChat } from 'ai/react'
 import { useState, useEffect } from 'react'
+import TrendChart from './TrendChart'
 
 interface AIAssistantProps {
   onHighlightAreas?: (geoids: string[]) => void
+  onSpilloverAreas?: (geoids: string[]) => void
   onFocusArea?: (geoid: string) => void
 }
 
-export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssistantProps) {
+interface TimelineData {
+  month: number
+  equity_score: number
+  gentrification_risk: number
+  foreclosure_risk: number
+}
+
+export default function AIAssistant({ onHighlightAreas, onSpilloverAreas, onFocusArea }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [chartData, setChartData] = useState<TimelineData[] | null>(null)
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
   })
 
-  // Extract GEOIDs from AI responses for map highlighting
+  // Extract GEOIDs, timeline data, and spillover areas from AI responses
   useEffect(() => {
     if (messages.length === 0) return
 
@@ -30,8 +40,29 @@ export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssista
       if (geoids.length > 0 && onHighlightAreas) {
         onHighlightAreas(geoids)
       }
+
+      // Try to extract timeline data and spillover info from message (if it's a JSON block)
+      try {
+        const jsonMatch = messageText.match(/```json\n([\s\S]*?)\n```/)
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[1])
+
+          // Timeline data for charts
+          if (data.timeline && Array.isArray(data.timeline)) {
+            setChartData(data.timeline)
+          }
+
+          // Spillover areas (from spillover simulations)
+          if (data.spillover && Array.isArray(data.spillover) && onSpilloverAreas) {
+            const spilloverGeoids = data.spillover.map((s: any) => s.geoid).filter(Boolean)
+            onSpilloverAreas(spilloverGeoids)
+          }
+        }
+      } catch (e) {
+        // Not JSON, that's fine
+      }
     }
-  }, [messages, onHighlightAreas])
+  }, [messages, onHighlightAreas, onSpilloverAreas])
 
   return (
     <>
@@ -57,30 +88,48 @@ export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssista
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 && (
               <div className="text-sm text-gray-500">
-                <p className="mb-2">Try asking:</p>
-                <ul className="list-disc ml-4 space-y-1 text-xs">
-                  <li>"What are the top 5 areas by equity score?"</li>
-                  <li>"Which areas have the highest foreclosure risk?"</li>
-                  <li>"What if income increased by 15%?"</li>
-                  <li>"Show me high gentrification risk areas"</li>
-                </ul>
+                <p className="mb-2 font-semibold">Try asking:</p>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <p className="font-medium text-gray-700 mb-1">📊 Data Queries:</p>
+                    <ul className="list-disc ml-4 space-y-1">
+                      <li>"What are the top 5 areas by equity score?"</li>
+                      <li>"Which areas have the highest foreclosure risk?"</li>
+                      <li>"Show me overall statistics"</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700 mb-1">🔄 Causal Loop Simulations:</p>
+                    <ul className="list-disc ml-4 space-y-1">
+                      <li>"Simulate $2M HTF investment over 12 months"</li>
+                      <li>"What if we do nothing in high-risk areas?"</li>
+                      <li>"Show spillover effects of $500K investment"</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
 
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+            {messages.map((msg, idx) => (
+              <div key={msg.id}>
+                <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      msg.role === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                  </div>
                 </div>
+
+                {/* Show chart if this is the last assistant message and we have timeline data */}
+                {msg.role === 'assistant' && idx === messages.length - 1 && chartData && (
+                  <div className="mt-3">
+                    <TrendChart timeline={chartData} height={250} />
+                  </div>
+                )}
               </div>
             ))}
 
