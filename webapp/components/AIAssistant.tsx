@@ -1,7 +1,6 @@
 'use client'
 
-import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from '@ai-sdk/react'
+import { useChat } from 'ai/react'
 import { useState, useEffect } from 'react'
 
 interface AIAssistantProps {
@@ -11,12 +10,9 @@ interface AIAssistantProps {
 
 export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [input, setInput] = useState('')
 
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/api/chat',
-    }),
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: '/api/chat',
   })
 
   // Extract GEOIDs from AI responses for map highlighting
@@ -25,11 +21,7 @@ export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssista
 
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.role !== 'user') {
-      // Extract text from parts
-      const messageText = lastMessage.parts
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
-        .join(' ')
+      const messageText = lastMessage.content || ''
 
       // Try to extract GEOIDs from the message content
       const geoidPattern = /\b\d{12}\b/g
@@ -40,14 +32,6 @@ export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssista
       }
     }
   }, [messages, onHighlightAreas])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (input.trim() && status === 'ready') {
-      sendMessage({ text: input })
-      setInput('')
-    }
-  }
 
   return (
     <>
@@ -95,24 +79,18 @@ export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssista
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap">
-                    {msg.parts
-                      .filter((part: any) => part.type === 'text')
-                      .map((part: any, i: number) => (
-                        <span key={i}>{part.text}</span>
-                      ))}
-                  </div>
+                  <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                 </div>
               </div>
             ))}
 
-            {status === 'streaming' && (
+            {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-lg px-4 py-2">
                   <div className="flex space-x-2">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce-delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce-delay-200"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
@@ -124,14 +102,14 @@ export default function AIAssistant({ onHighlightAreas, onFocusArea }: AIAssista
             <div className="flex space-x-2">
               <input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Ask about the data..."
                 className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                disabled={status !== 'ready'}
+                disabled={isLoading}
               />
               <button
                 type="submit"
-                disabled={status !== 'ready' || !input.trim()}
+                disabled={isLoading || !input.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Send
