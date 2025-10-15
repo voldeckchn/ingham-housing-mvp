@@ -123,7 +123,27 @@ export default function BlockGroupMap({
 
     const map = mapRef.current
 
-    if (!map.getLayer('bg-highlights')) {
+    // Wait for map to be fully loaded
+    if (!map.isStyleLoaded()) {
+      const onLoad = () => {
+        if (map.getSource('block-groups') && !map.getLayer('bg-highlights')) {
+          map.addLayer({
+            id: 'bg-highlights',
+            type: 'line',
+            source: 'block-groups',
+            paint: {
+              'line-color': '#ff0000',
+              'line-width': 3
+            },
+            filter: ['in', 'GEOID', ...highlightedAreas]
+          })
+        }
+      }
+      map.once('idle', onLoad)
+      return
+    }
+
+    if (map.getSource('block-groups') && !map.getLayer('bg-highlights')) {
       map.addLayer({
         id: 'bg-highlights',
         type: 'line',
@@ -134,7 +154,7 @@ export default function BlockGroupMap({
         },
         filter: ['in', 'GEOID', ...highlightedAreas]
       })
-    } else {
+    } else if (map.getLayer('bg-highlights')) {
       map.setFilter('bg-highlights', ['in', 'GEOID', ...highlightedAreas])
     }
   }, [highlightedAreas])
@@ -145,7 +165,39 @@ export default function BlockGroupMap({
 
     const map = mapRef.current
 
-    if (!map.getLayer('bg-spillover')) {
+    // Wait for map to be fully loaded
+    if (!map.isStyleLoaded()) {
+      const onLoad = () => {
+        if (map.getSource('block-groups') && !map.getLayer('bg-spillover')) {
+          map.addLayer({
+            id: 'bg-spillover',
+            type: 'line',
+            source: 'block-groups',
+            paint: {
+              'line-color': '#fb923c',
+              'line-width': 2,
+              'line-dasharray': [2, 2]
+            },
+            filter: ['in', 'GEOID', ...spilloverAreas]
+          })
+
+          map.addLayer({
+            id: 'bg-spillover-fill',
+            type: 'fill',
+            source: 'block-groups',
+            paint: {
+              'fill-color': '#fb923c',
+              'fill-opacity': 0.15
+            },
+            filter: ['in', 'GEOID', ...spilloverAreas]
+          }, 'bg-fill')
+        }
+      }
+      map.once('idle', onLoad)
+      return
+    }
+
+    if (map.getSource('block-groups') && !map.getLayer('bg-spillover')) {
       map.addLayer({
         id: 'bg-spillover',
         type: 'line',
@@ -169,7 +221,7 @@ export default function BlockGroupMap({
         },
         filter: ['in', 'GEOID', ...spilloverAreas]
       }, 'bg-fill') // Insert below the main fill layer
-    } else {
+    } else if (map.getLayer('bg-spillover')) {
       map.setFilter('bg-spillover', ['in', 'GEOID', ...spilloverAreas])
       map.setFilter('bg-spillover-fill', ['in', 'GEOID', ...spilloverAreas])
     }
