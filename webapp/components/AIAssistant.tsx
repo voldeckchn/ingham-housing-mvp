@@ -66,13 +66,14 @@ export default function AIAssistant({ onHighlightAreas, onSpilloverAreas, onFocu
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button - Highly visible */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center z-50 transition-all"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 hover:scale-110 flex items-center justify-center z-50 transition-all animate-pulse"
         aria-label="Toggle AI Assistant"
+        title="Chat with AI Assistant"
       >
-        {isOpen ? '✕' : '💬'}
+        <span className="text-2xl">{isOpen ? '✕' : '💬'}</span>
       </button>
 
       {/* Chat panel */}

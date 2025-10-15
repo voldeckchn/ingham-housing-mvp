@@ -29,30 +29,35 @@ export default function BlockGroupMap({
     // Set Mapbox token
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
-    // Initialize map
+    // Initialize map centered on Ingham County
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: [-84.5555, 42.7325], // Lansing, MI
-      zoom: 10
+      center: [-84.3733, 42.5917], // Ingham County center
+      zoom: 9.5 // Wider view to show entire county
     })
 
     map.on('load', async () => {
+      console.log('Map loaded, fetching GeoJSON...')
+
       // Load block group GeoJSON
       const response = await fetch('/data/ingham_block_groups.geojson')
       const geojson = await response.json()
+      console.log('GeoJSON loaded, features:', geojson.features?.length)
 
       // Create a map of scores by GEOID
       const scoresMap: Record<string, number> = {}
       predictions.forEach(p => {
         scoresMap[p.geoid] = p.equity_score
       })
+      console.log('Scores mapped for', Object.keys(scoresMap).length, 'block groups')
 
       // Add source
       map.addSource('block-groups', {
         type: 'geojson',
         data: geojson
       })
+      console.log('Source added: block-groups')
 
       // Add fill layer with color based on equity score
       map.addLayer({
@@ -78,6 +83,7 @@ export default function BlockGroupMap({
           'fill-opacity': 0.7
         }
       })
+      console.log('Fill layer added: bg-fill')
 
       // Add border layer
       map.addLayer({
@@ -89,25 +95,36 @@ export default function BlockGroupMap({
           'line-width': 1
         }
       })
+      console.log('Border layer added: bg-borders')
 
       // Add click handler - ensure it's registered after layer is added
       const handleClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+        console.log('Map clicked! Event:', e)
+        console.log('Features:', e.features)
+
         if (e.features && e.features.length > 0) {
           const geoid = e.features[0].properties?.GEOID
-          console.log('Clicked GEOID:', geoid) // Debug log
+          console.log('Clicked GEOID:', geoid)
           const data = predictions.find(p => p.geoid === geoid)
-          console.log('Found data:', data) // Debug log
+          console.log('Found data:', data)
           if (data) {
+            console.log('Setting selected block group:', data.name)
             setSelectedBG(data)
+          } else {
+            console.warn('No matching data found for GEOID:', geoid)
           }
+        } else {
+          console.warn('No features in click event')
         }
       }
 
       map.on('click', 'bg-fill', handleClick)
+      console.log('Click handler registered for bg-fill')
 
       // Change cursor on hover
       map.on('mouseenter', 'bg-fill', () => {
         map.getCanvas().style.cursor = 'pointer'
+        console.log('Cursor changed to pointer')
       })
       map.on('mouseleave', 'bg-fill', () => {
         map.getCanvas().style.cursor = ''
@@ -118,6 +135,8 @@ export default function BlockGroupMap({
       map.on('mouseenter', 'bg-borders', () => {
         map.getCanvas().style.cursor = 'pointer'
       })
+
+      console.log('All map layers and handlers configured successfully')
     })
 
     mapRef.current = map

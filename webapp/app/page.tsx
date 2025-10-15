@@ -62,53 +62,60 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen">
       {/* Title Card */}
-      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg p-3 w-72">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg font-bold text-gray-900">
-            Ingham County Housing
-          </h1>
-          <button
-            onClick={handleExportCSV}
-            className="px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-            title="Export all block group data to CSV"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export
-          </button>
-        </div>
+      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg p-4 w-80">
+        <h1 className="text-xl font-bold text-gray-900 mb-3">
+          Ingham County Housing Equity
+        </h1>
 
-        <div className="text-xs text-gray-600 mb-3">
-          <p className="mb-1"><strong>{predictions.length}</strong> block groups • Click any area for details</p>
+        <div className="text-sm text-gray-600 mb-3">
+          <p><strong>{predictions.length}</strong> Census Block Groups</p>
           {highlightedAreas.length > 0 && (
-            <p className="text-blue-600 font-medium">
-              🔍 {highlightedAreas.length} areas highlighted
+            <p className="text-blue-600 font-medium mt-1">
+              🔍 {highlightedAreas.length} areas highlighted by AI
             </p>
           )}
         </div>
 
-        {/* Compact Legend */}
-        <div className="flex items-center gap-3 text-xs text-gray-600 pb-2 border-b">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-green-600 rounded"></div>
-            <span>High</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-yellow-400 rounded"></div>
-            <span>Med</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-red-600 rounded"></div>
-            <span>Low</span>
+        {/* Legend with label */}
+        <div className="mb-3">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Housing Equity Score:</p>
+          <div className="flex items-center gap-4 text-xs text-gray-600">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-green-600 rounded"></div>
+              <span>High (70+)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-yellow-400 rounded"></div>
+              <span>Med (40-70)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-red-600 rounded"></div>
+              <span>Low (0-40)</span>
+            </div>
           </div>
         </div>
 
         {/* Quick Instructions */}
-        <div className="mt-2 text-xs text-gray-500">
-          <p className="mb-1">💬 <strong>Ask AI:</strong> Click chat button below</p>
-          <p>🗺️ <strong>Explore:</strong> Click map to view data</p>
+        <div className="mb-3 p-2 bg-blue-50 rounded text-xs text-gray-700">
+          <p className="mb-1">
+            <strong>💬 Chat with AI:</strong> Click blue button (bottom-right) →
+          </p>
+          <p>
+            <strong>🗺️ View Details:</strong> Click any colored area on map
+          </p>
         </div>
+
+        {/* Export Button - Now on its own line */}
+        <button
+          onClick={handleExportCSV}
+          className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          title="Export all block group data to CSV"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export All Data (CSV)
+        </button>
       </div>
 
       {/* Map */}
