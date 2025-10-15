@@ -90,16 +90,20 @@ export default function BlockGroupMap({
         }
       })
 
-      // Add click handler
-      map.on('click', 'bg-fill', (e) => {
-        if (e.features && e.features[0]) {
+      // Add click handler - ensure it's registered after layer is added
+      const handleClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+        if (e.features && e.features.length > 0) {
           const geoid = e.features[0].properties?.GEOID
+          console.log('Clicked GEOID:', geoid) // Debug log
           const data = predictions.find(p => p.geoid === geoid)
+          console.log('Found data:', data) // Debug log
           if (data) {
             setSelectedBG(data)
           }
         }
-      })
+      }
+
+      map.on('click', 'bg-fill', handleClick)
 
       // Change cursor on hover
       map.on('mouseenter', 'bg-fill', () => {
@@ -107,6 +111,12 @@ export default function BlockGroupMap({
       })
       map.on('mouseleave', 'bg-fill', () => {
         map.getCanvas().style.cursor = ''
+      })
+
+      // Also handle clicks on the borders
+      map.on('click', 'bg-borders', handleClick)
+      map.on('mouseenter', 'bg-borders', () => {
+        map.getCanvas().style.cursor = 'pointer'
       })
     })
 
